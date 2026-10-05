@@ -73,3 +73,14 @@ input[type=checkbox]{width:auto}
 .msg{min-height:1.4em;color:#6be08a}
 .msg.bad{color:#ff6b6b}
 [hidden]{display:none!important}
+
+/* Gros format : un élément par ligne, image pleine largeur */
+main{max-width:1400px}
+.items.big{grid-template-columns:1fr;gap:28px;max-width:1280px;margin:0 auto}
+.items.big .item{border-radius:16px}
+.items.big .item .body{padding:24px;gap:12px}
+.items.big .item h3{font-size:1.8rem}
+.items.big .item p{font-size:1.1rem;line-height:1.6;color:var(--text)}
+.items.big .item .btn{font-size:1.2rem;padding:16px;width:100%}
+.cats{grid-template-columns:repeat(auto-fill,minmax(420px,1fr))}
+@media(max-width:480px){.cats{grid-template-columns:1fr}}
