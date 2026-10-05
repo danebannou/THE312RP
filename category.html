@@ -4,18 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>THE312RP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header id="header"></header>
 
-<div class="layout">
-  <aside id="sidebar" class="sidebar"></aside>
-  <main>
-    <h2 id="title" class="section-title"></h2>
-    <div id="items" class="items big"></div>
-  </main>
-</div>
+<main class="page">
+  <h2 id="title" class="page-title"></h2>
+  <div id="items" class="items big"></div>
+</main>
 
 <footer id="footer"></footer>
 
@@ -44,8 +43,7 @@
 (async () => {
   const id = new URLSearchParams(location.search).get("id");
   const s = await getSettings();
-  renderHeader(s);
-  renderSidebar(id);
+  renderHeader(s, false, id);
 
   const [{ data: cat }, { data: items }] = await Promise.all([
     db.from("categories").select("*").eq("id", id).single(),

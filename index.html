@@ -4,22 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>THE312RP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header id="header"></header>
 
-<div class="layout">
-  <aside id="sidebar" class="sidebar"></aside>
-  <main>
-    <section class="welcome">
-      <p class="kicker">Bienvenue</p>
-      <h1 id="welcomeTitle"></h1>
-      <p class="muted">Choisis une catégorie dans le menu pour voir son contenu.</p>
-      <div id="welcomeBtn"></div>
-    </section>
-  </main>
-</div>
+<section id="hero" class="hero"></section>
+
+<section class="section" id="categories">
+  <div class="section-head">
+    <h2>Nos <span class="accent">catégories</span></h2>
+    <p>Choisis une catégorie pour découvrir son contenu.</p>
+  </div>
+  <div id="cats" class="cats"></div>
+</section>
 
 <footer id="footer"></footer>
 
@@ -30,12 +30,40 @@
 (async () => {
   const s = await getSettings();
   renderHeader(s);
-  renderSidebar(null);
-  document.getElementById("welcomeTitle").textContent = s.site_name || "THE312RP";
-  if (s.discord_url)
-    document.getElementById("welcomeBtn").innerHTML =
-      `<a class="btn discord big" href="${esc(s.discord_url)}" target="_blank" rel="noopener">Rejoindre le Discord</a>`;
-  document.getElementById("footer").textContent = `© ${new Date().getFullYear()} ${s.site_name || "THE312RP"}`;
+
+  const name = s.site_name || "THE312RP";
+  const stats = (Array.isArray(s.stats) ? s.stats : []).filter((x) => x && (x.value || x.label));
+  const text = s.hero_text || "Bienvenue ! Découvre nos catégories et rejoins la communauté sur Discord.";
+  const hero = document.getElementById("hero");
+  hero.classList.toggle("no-img", !s.banner_url);
+  hero.innerHTML = `
+    <div>
+      <h1>Bienvenue sur<br><span class="accent">${esc(name)}</span></h1>
+      <p>${esc(text)}</p>
+      <div class="actions">
+        <a class="btn dark" href="#categories">Voir les catégories</a>
+        ${s.discord_url ? `<a class="btn" href="${esc(s.discord_url)}" target="_blank" rel="noopener">Rejoindre le Discord</a>` : ""}
+      </div>
+      ${stats.length ? `<div class="stats">${stats.map((x) => `<div class="stat"><b>${esc(x.value)}</b><span>${esc(x.label)}</span></div>`).join("")}</div>` : ""}
+    </div>
+    ${s.banner_url ? `<div class="hero-img"><img src="${esc(s.banner_url)}" alt=""></div>` : ""}`;
+
+  const [{ data: cats }, { data: items }] = await Promise.all([
+    db.from("categories").select("*").order("position").order("created_at"),
+    db.from("items").select("category_id,image_url,images,created_at").order("created_at", { ascending: false }),
+  ]);
+  const box = document.getElementById("cats");
+  if (!cats || !cats.length) box.innerHTML = '<p class="empty">Aucune catégorie pour le moment.</p>';
+  else box.innerHTML = cats.map((c) => {
+    const mine = (items || []).filter((i) => i.category_id === c.id);
+    const cover = mine.map((i) => imgs(i)[0]).find(Boolean);
+    return `<a class="cat-card" href="category.html?id=${c.id}">
+      ${cover ? `<img src="${esc(cover)}" alt="" loading="lazy">` : ""}
+      <div class="cat-label"><span>${esc(c.name)}</span><small>${mine.length} élément${mine.length > 1 ? "s" : ""}</small></div>
+    </a>`;
+  }).join("");
+
+  document.getElementById("footer").textContent = `© ${new Date().getFullYear()} ${name}`;
 })();
 </script>
 </body>

@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -35,6 +37,15 @@
       <form id="settingsForm">
         <label>Nom du site <input id="siteName"></label>
         <label>Lien Discord <input id="discordUrl" type="url" placeholder="https://discord.gg/..."></label>
+        <label>Texte d'accueil <textarea id="heroText" rows="3" placeholder="Une courte phrase de bienvenue"></textarea></label>
+        <label>Image d'accueil (à droite du texte, 1920×1080)
+          <input id="heroFile" type="file" accept="image/*">
+        </label>
+        <img id="heroPreview" class="preview" alt="">
+        <label>Chiffres de l'accueil (laisse vide pour masquer)</label>
+        <div class="stat-row"><input id="st1v" placeholder="200+"><input id="st1l" placeholder="Joueurs"></div>
+        <div class="stat-row"><input id="st2v" placeholder="10k+"><input id="st2l" placeholder="Messages"></div>
+        <div class="stat-row"><input id="st3v" placeholder="4+"><input id="st3l" placeholder="Années"></div>
         <label>Photo de fond du site (1920×1080)
           <input id="bgFile" type="file" accept="image/*">
         </label>
@@ -105,6 +116,14 @@ async function loadAll() {
   settings = await getSettings();
   $("siteName").value = settings.site_name || "";
   $("discordUrl").value = settings.discord_url || "";
+  $("heroText").value = settings.hero_text || "";
+  $("heroPreview").src = settings.banner_url || "";
+  $("heroPreview").hidden = !settings.banner_url;
+  const st = Array.isArray(settings.stats) ? settings.stats : [];
+  [1, 2, 3].forEach((n) => {
+    $(`st${n}v`).value = (st[n - 1] && st[n - 1].value) || "";
+    $(`st${n}l`).value = (st[n - 1] && st[n - 1].label) || "";
+  });
   $("bgPreview").src = settings.background_url || "";
   $("bgPreview").hidden = !settings.background_url;
 
@@ -143,11 +162,17 @@ $("settingsForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   try {
     const patch = { site_name: $("siteName").value.trim() || "THE312RP", discord_url: $("discordUrl").value.trim() || null };
+    patch.hero_text = $("heroText").value.trim() || null;
+    patch.stats = [1, 2, 3]
+      .map((n) => ({ value: $(`st${n}v`).value.trim(), label: $(`st${n}l`).value.trim() }))
+      .filter((x) => x.value || x.label);
+    const hf = $("heroFile").files[0];
+    if (hf) { patch.banner_url = await uploadImage(hf); await deleteImage(settings.banner_url); }
     const bg = $("bgFile").files[0];
     if (bg) { patch.background_url = await uploadImage(bg); await deleteImage(settings.background_url); }
     const { error } = await db.from("settings").update(patch).eq("id", 1);
     if (error) throw error;
-    $("bgFile").value = "";
+    $("bgFile").value = ""; $("heroFile").value = "";
     say("Réglages enregistrés ✔");
     loadAll();
   } catch (err) { say("Erreur : " + err.message, true); }
