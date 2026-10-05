@@ -9,12 +9,17 @@
 <body>
 <header id="header"></header>
 
-<section id="banner" class="banner"></section>
-
-<main>
-  <h2 class="section-title">Catégories</h2>
-  <div id="cats" class="cats"></div>
-</main>
+<div class="layout">
+  <aside id="sidebar" class="sidebar"></aside>
+  <main>
+    <section class="welcome">
+      <p class="kicker">Bienvenue</p>
+      <h1 id="welcomeTitle"></h1>
+      <p class="muted">Choisis une catégorie dans le menu pour voir son contenu.</p>
+      <div id="welcomeBtn"></div>
+    </section>
+  </main>
+</div>
 
 <footer id="footer"></footer>
 
@@ -25,30 +30,11 @@
 (async () => {
   const s = await getSettings();
   renderHeader(s);
-
-  document.getElementById("banner").innerHTML = `
-    ${s.banner_url ? `<img src="${esc(s.banner_url)}" alt="">` : ""}
-    <div class="banner-text">
-      <h1>${esc(s.site_name || "THE312RP")}</h1>
-      ${s.discord_url ? `<a class="btn discord big" href="${esc(s.discord_url)}" target="_blank" rel="noopener">Rejoindre le Discord</a>` : ""}
-    </div>`;
-
-  const [{ data: cats }, { data: items }] = await Promise.all([
-    db.from("categories").select("*").order("position").order("created_at"),
-    db.from("items").select("category_id,image_url,created_at").order("created_at", { ascending: false }),
-  ]);
-
-  const box = document.getElementById("cats");
-  if (!cats || !cats.length) { box.innerHTML = '<p class="empty">Aucune catégorie pour le moment.</p>'; }
-  else box.innerHTML = cats.map((c) => {
-    const mine = (items || []).filter((i) => i.category_id === c.id);
-    const cover = mine.find((i) => i.image_url);
-    return `<a class="cat-card" href="category.html?id=${c.id}">
-      ${cover ? `<img src="${esc(cover.image_url)}" alt="" loading="lazy">` : ""}
-      <div class="cat-label"><span>${esc(c.name)}</span><small>${mine.length} élément${mine.length > 1 ? "s" : ""}</small></div>
-    </a>`;
-  }).join("");
-
+  renderSidebar(null);
+  document.getElementById("welcomeTitle").textContent = s.site_name || "THE312RP";
+  if (s.discord_url)
+    document.getElementById("welcomeBtn").innerHTML =
+      `<a class="btn discord big" href="${esc(s.discord_url)}" target="_blank" rel="noopener">Rejoindre le Discord</a>`;
   document.getElementById("footer").textContent = `© ${new Date().getFullYear()} ${s.site_name || "THE312RP"}`;
 })();
 </script>

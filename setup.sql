@@ -56,3 +56,6 @@ drop policy if exists "images admin modif" on storage.objects;
 create policy "images admin modif" on storage.objects for update to authenticated using (bucket_id = 'images');
 drop policy if exists "images admin suppression" on storage.objects;
 create policy "images admin suppression" on storage.objects for delete to authenticated using (bucket_id = 'images');
+alter table settings add column if not exists background_url text;
+alter table items add column if not exists images text[] not null default '{}';
+notify pgrst, 'reload schema';

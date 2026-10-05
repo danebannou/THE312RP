@@ -55,3 +55,14 @@ async function deleteImage(url) {
 function imgs(i) {
   return i.images && i.images.length ? i.images : i.image_url ? [i.image_url] : [];
 }
+
+// Liste verticale des catégories à gauche
+async function renderSidebar(activeId) {
+  const box = document.getElementById("sidebar");
+  if (!box) return;
+  const { data } = await db.from("categories").select("*").order("position").order("created_at");
+  box.innerHTML = `<p class="kicker">Catégories</p>` +
+    ((data || []).map((c) =>
+      `<a href="category.html?id=${c.id}" class="${c.id === activeId ? "active" : ""}">${esc(c.name)}</a>`
+    ).join("") || '<span class="muted">Aucune catégorie.</span>');
+}

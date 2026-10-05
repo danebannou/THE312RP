@@ -9,11 +9,13 @@
 <body>
 <header id="header"></header>
 
-<main>
-  <a class="back" href="index.html">← Retour</a>
-  <h2 id="title" class="section-title"></h2>
-  <div id="items" class="items big"></div>
-</main>
+<div class="layout">
+  <aside id="sidebar" class="sidebar"></aside>
+  <main>
+    <h2 id="title" class="section-title"></h2>
+    <div id="items" class="items big"></div>
+  </main>
+</div>
 
 <footer id="footer"></footer>
 
@@ -43,6 +45,7 @@
   const id = new URLSearchParams(location.search).get("id");
   const s = await getSettings();
   renderHeader(s);
+  renderSidebar(id);
 
   const [{ data: cat }, { data: items }] = await Promise.all([
     db.from("categories").select("*").eq("id", id).single(),
