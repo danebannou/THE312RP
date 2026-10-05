@@ -84,3 +84,12 @@ main{max-width:1400px}
 .items.big .item .btn{font-size:1.2rem;padding:16px;width:100%}
 .cats{grid-template-columns:repeat(auto-fill,minmax(420px,1fr))}
 @media(max-width:480px){.cats{grid-template-columns:1fr}}
+
+/* 3 par ligne */
+.items.big{grid-template-columns:repeat(3,1fr);gap:22px;max-width:1400px}
+.items.big .item .body{padding:16px;gap:8px}
+.items.big .item h3{font-size:1.3rem}
+.items.big .item p{font-size:1rem}
+.items.big .item .btn{font-size:1.05rem;padding:12px}
+@media(max-width:1000px){.items.big{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:650px){.items.big{grid-template-columns:1fr}}
