@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -7,25 +7,50 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header>
-  <h1>🛍️ THE312RP</h1>
-  <input id="search" type="search" placeholder="Rechercher un produit...">
-  <button id="cartBtn">Panier (<span id="count">0</span>)</button>
-</header>
+<header id="header"></header>
 
-<nav id="filters"></nav>
+<section id="banner" class="banner"></section>
 
-<main id="grid"></main>
+<main>
+  <h2 class="section-title">Catégories</h2>
+  <div id="cats" class="cats"></div>
+</main>
 
-<aside id="cart" hidden>
-  <h2>Votre panier</h2>
-  <ul id="cartItems"></ul>
-  <p>Total : <strong id="total">0 €</strong></p>
-  <button id="checkout">Commander</button>
-  <button id="closeCart">Fermer</button>
-</aside>
+<footer id="footer"></footer>
 
-<footer>© 2026 THE312RP</footer>
-<script src="app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+(async () => {
+  const s = await getSettings();
+  renderHeader(s);
+
+  document.getElementById("banner").innerHTML = `
+    ${s.banner_url ? `<img src="${esc(s.banner_url)}" alt="">` : ""}
+    <div class="banner-text">
+      <h1>${esc(s.site_name || "THE312RP")}</h1>
+      ${s.discord_url ? `<a class="btn discord big" href="${esc(s.discord_url)}" target="_blank" rel="noopener">Rejoindre le Discord</a>` : ""}
+    </div>`;
+
+  const [{ data: cats }, { data: items }] = await Promise.all([
+    db.from("categories").select("*").order("position").order("created_at"),
+    db.from("items").select("category_id,image_url,created_at").order("created_at", { ascending: false }),
+  ]);
+
+  const box = document.getElementById("cats");
+  if (!cats || !cats.length) { box.innerHTML = '<p class="empty">Aucune catégorie pour le moment.</p>'; }
+  else box.innerHTML = cats.map((c) => {
+    const mine = (items || []).filter((i) => i.category_id === c.id);
+    const cover = mine.find((i) => i.image_url);
+    return `<a class="cat-card" href="category.html?id=${c.id}">
+      ${cover ? `<img src="${esc(cover.image_url)}" alt="" loading="lazy">` : ""}
+      <div class="cat-label"><span>${esc(c.name)}</span><small>${mine.length} élément${mine.length > 1 ? "s" : ""}</small></div>
+    </a>`;
+  }).join("");
+
+  document.getElementById("footer").textContent = `© ${new Date().getFullYear()} ${s.site_name || "THE312RP"}`;
+})();
+</script>
 </body>
 </html>

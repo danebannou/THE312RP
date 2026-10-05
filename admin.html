@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Admin</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header id="header"></header>
+
+<main>
+  <!-- Connexion -->
+  <section id="login" class="panel narrow" hidden>
+    <h2>Connexion admin</h2>
+    <form id="loginForm">
+      <input id="email" type="email" placeholder="Email" required>
+      <input id="password" type="password" placeholder="Mot de passe" required>
+      <button class="btn" type="submit">Se connecter</button>
+      <p id="loginErr" class="err"></p>
+    </form>
+  </section>
+
+  <!-- Panneau admin -->
+  <section id="panel" hidden>
+    <div class="bar">
+      <h2>Panneau admin</h2>
+      <div><a class="btn ghost" href="index.html" target="_blank">Voir le site</a> <button id="logout" class="btn ghost">Déconnexion</button></div>
+    </div>
+    <p id="msg" class="msg"></p>
+
+    <div class="panel">
+      <h3>Réglages du site</h3>
+      <form id="settingsForm">
+        <label>Nom du site <input id="siteName"></label>
+        <label>Lien Discord <input id="discordUrl" type="url" placeholder="https://discord.gg/..."></label>
+        <label>Bannière de l'accueil (1920×1080)
+          <input id="bannerFile" type="file" accept="image/*">
+        </label>
+        <img id="bannerPreview" class="preview" alt="">
+        <button class="btn" type="submit">Enregistrer</button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h3>Catégories</h3>
+      <form id="catForm" class="row">
+        <input id="catName" placeholder="Nouvelle catégorie (ex : Job)" required>
+        <button class="btn" type="submit">Ajouter</button>
+      </form>
+      <ul id="catList" class="list"></ul>
+    </div>
+
+    <div class="panel">
+      <h3 id="itemFormTitle">Ajouter un élément</h3>
+      <form id="itemForm">
+        <label>Catégorie <select id="itemCat" required></select></label>
+        <label>Titre <input id="itemTitle" required></label>
+        <label>Description <textarea id="itemDesc" rows="4"></textarea></label>
+        <label>Photo (recadrée en 1920×1080) <input id="itemFile" type="file" accept="image/*"></label>
+        <label class="check"><input id="itemAvail" type="checkbox" checked> Disponible</label>
+        <img id="itemPreview" class="preview" alt="">
+        <div class="row">
+          <button class="btn" type="submit" id="itemSubmit">Publier</button>
+          <button class="btn ghost" type="button" id="itemCancel" hidden>Annuler la modification</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h3>Tous les éléments</h3>
+      <div id="itemList" class="items admin-items"></div>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+let cats = [], editing = null, settings = {};
+
+const say = (t, bad) => { const m = $("msg"); m.textContent = t; m.className = "msg" + (bad ? " bad" : ""); if (t) setTimeout(() => (m.textContent = ""), 4000); };
+
+async function start() {
+  settings = await getSettings();
+  renderHeader(settings, true);
+  const { data: { session } } = await db.auth.getSession();
+  $("login").hidden = !!session;
+  $("panel").hidden = !session;
+  if (session) await loadAll();
+}
+
+$("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const { error } = await db.auth.signInWithPassword({ email: $("email").value, password: $("password").value });
+  if (error) { $("loginErr").textContent = "Email ou mot de passe incorrect."; return; }
+  start();
+});
+$("logout").onclick = async () => { await db.auth.signOut(); start(); };
+
+async function loadAll() {
+  settings = await getSettings();
+  $("siteName").value = settings.site_name || "";
+  $("discordUrl").value = settings.discord_url || "";
+  $("bannerPreview").src = settings.banner_url || "";
+  $("bannerPreview").hidden = !settings.banner_url;
+
+  const { data } = await db.from("categories").select("*").order("position").order("created_at");
+  cats = data || [];
+  $("itemCat").innerHTML = cats.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
+  $("catList").innerHTML = cats.map((c) => `
+    <li><span>${esc(c.name)}</span>
+      <button class="btn small ghost" data-rename="${c.id}">Renommer</button>
+      <button class="btn small red" data-delcat="${c.id}">Supprimer</button></li>`).join("") || "<li>Aucune catégorie.</li>";
+  await loadItems();
+}
+
+async function loadItems() {
+  const { data } = await db.from("items").select("*").order("created_at", { ascending: false });
+  const name = (id) => (cats.find((c) => c.id === id) || {}).name || "?";
+  $("itemList").innerHTML = (data || []).map((i) => `
+    <article class="item ${i.available ? "" : "off"}">
+      <div class="img">${i.image_url ? `<img src="${esc(i.image_url)}" alt="" loading="lazy">` : ""}</div>
+      <div class="body">
+        <small>${esc(name(i.category_id))}</small>
+        <h3>${esc(i.title)}</h3>
+        <p>${esc(i.description)}</p>
+        <button class="btn ${i.available ? "green" : "red"}" data-toggle="${i.id}" data-state="${i.available}">
+          ${i.available ? "Disponible" : "Indisponible"} (cliquer pour changer)</button>
+        <div class="row">
+          <button class="btn small ghost" data-edit="${i.id}">Modifier</button>
+          <button class="btn small red" data-delitem="${i.id}">Supprimer</button>
+        </div>
+      </div>
+    </article>`).join("") || "<p class='empty'>Aucun élément.</p>";
+  window._items = data || [];
+}
+
+$("settingsForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try {
+    const patch = { site_name: $("siteName").value.trim() || "THE312RP", discord_url: $("discordUrl").value.trim() || null };
+    const f = $("bannerFile").files[0];
+    if (f) { patch.banner_url = await uploadImage(f); await deleteImage(settings.banner_url); }
+    const { error } = await db.from("settings").update(patch).eq("id", 1);
+    if (error) throw error;
+    $("bannerFile").value = "";
+    say("Réglages enregistrés ✔");
+    loadAll();
+  } catch (err) { say("Erreur : " + err.message, true); }
+});
+
+$("catForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const { error } = await db.from("categories").insert({ name: $("catName").value.trim(), position: cats.length });
+  if (error) return say("Erreur : " + error.message, true);
+  $("catName").value = "";
+  say("Catégorie ajoutée ✔");
+  loadAll();
+});
+
+$("itemFile").addEventListener("change", () => {
+  const f = $("itemFile").files[0];
+  if (f) { $("itemPreview").src = URL.createObjectURL(f); $("itemPreview").hidden = false; }
+});
+
+function resetItemForm() {
+  editing = null;
+  $("itemForm").reset();
+  $("itemAvail").checked = true;
+  $("itemPreview").hidden = true;
+  $("itemFormTitle").textContent = "Ajouter un élément";
+  $("itemSubmit").textContent = "Publier";
+  $("itemCancel").hidden = true;
+}
+$("itemCancel").onclick = resetItemForm;
+$("itemPreview").hidden = true;
+
+$("itemForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("itemSubmit").disabled = true;
+  try {
+    const row = {
+      category_id: $("itemCat").value,
+      title: $("itemTitle").value.trim(),
+      description: $("itemDesc").value.trim(),
+      available: $("itemAvail").checked,
+    };
+    const f = $("itemFile").files[0];
+    if (f) {
+      row.image_url = await uploadImage(f);
+      if (editing && editing.image_url) await deleteImage(editing.image_url);
+    }
+    const q = editing ? db.from("items").update(row).eq("id", editing.id) : db.from("items").insert(row);
+    const { error } = await q;
+    if (error) throw error;
+    say(editing ? "Modifié ✔" : "Publié ✔");
+    resetItemForm();
+    loadItems();
+  } catch (err) { say("Erreur : " + err.message, true); }
+  $("itemSubmit").disabled = false;
+});
+
+document.addEventListener("click", async (e) => {
+  const t = e.target;
+  if (t.dataset.toggle) {
+    const next = t.dataset.state !== "true";
+    const { error } = await db.from("items").update({ available: next }).eq("id", t.dataset.toggle);
+    if (error) return say("Erreur : " + error.message, true);
+    loadItems();
+  }
+  if (t.dataset.delitem) {
+    if (!confirm("Supprimer cet élément ?")) return;
+    const it = window._items.find((i) => i.id === t.dataset.delitem);
+    await db.from("items").delete().eq("id", t.dataset.delitem);
+    if (it) await deleteImage(it.image_url);
+    loadItems();
+  }
+  if (t.dataset.edit) {
+    const it = window._items.find((i) => i.id === t.dataset.edit);
+    editing = it;
+    $("itemCat").value = it.category_id;
+    $("itemTitle").value = it.title;
+    $("itemDesc").value = it.description || "";
+    $("itemAvail").checked = it.available;
+    $("itemPreview").src = it.image_url || "";
+    $("itemPreview").hidden = !it.image_url;
+    $("itemFormTitle").textContent = "Modifier l'élément";
+    $("itemSubmit").textContent = "Enregistrer";
+    $("itemCancel").hidden = false;
+    $("itemForm").scrollIntoView({ behavior: "smooth" });
+  }
+  if (t.dataset.delcat) {
+    if (!confirm("Supprimer cette catégorie et TOUS ses éléments ?")) return;
+    const urls = window._items.filter((i) => i.category_id === t.dataset.delcat).map((i) => i.image_url);
+    await db.from("categories").delete().eq("id", t.dataset.delcat);
+    for (const u of urls) await deleteImage(u);
+    loadAll();
+  }
+  if (t.dataset.rename) {
+    const c = cats.find((x) => x.id === t.dataset.rename);
+    const n = prompt("Nouveau nom :", c.name);
+    if (n && n.trim()) { await db.from("categories").update({ name: n.trim() }).eq("id", c.id); loadAll(); }
+  }
+});
+
+start();
+</script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THE312RP</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header id="header"></header>
+
+<main>
+  <a class="back" href="index.html">← Retour</a>
+  <h2 id="title" class="section-title"></h2>
+  <div id="items" class="items"></div>
+</main>
+
+<footer id="footer"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>
+(async () => {
+  const id = new URLSearchParams(location.search).get("id");
+  const s = await getSettings();
+  renderHeader(s);
+
+  const [{ data: cat }, { data: items }] = await Promise.all([
+    db.from("categories").select("*").eq("id", id).single(),
+    db.from("items").select("*").eq("category_id", id).order("created_at", { ascending: false }),
+  ]);
+
+  document.getElementById("title").textContent = cat ? cat.name : "Catégorie introuvable";
+  const box = document.getElementById("items");
+  if (!items || !items.length) { box.innerHTML = '<p class="empty">Rien ici pour le moment.</p>'; }
+  else box.innerHTML = items.map((i) => `
+    <article class="item ${i.available ? "" : "off"}">
+      <a href="${esc(i.image_url)}" target="_blank" rel="noopener" class="img">
+        ${i.image_url ? `<img src="${esc(i.image_url)}" alt="${esc(i.title)}" loading="lazy">` : ""}
+      </a>
+      <div class="body">
+        <h3>${esc(i.title)}</h3>
+        <p>${esc(i.description)}</p>
+        ${i.available
+          ? (s.discord_url
+              ? `<a class="btn green" href="${esc(s.discord_url)}" target="_blank" rel="noopener">Disponible</a>`
+              : `<span class="btn green">Disponible</span>`)
+          : `<span class="btn red">Indisponible</span>`}
+      </div>
+    </article>`).join("");
+
+  document.getElementById("footer").textContent = `© ${new Date().getFullYear()} ${s.site_name || "THE312RP"}`;
+})();
+</script>
+</body>
+</html>
