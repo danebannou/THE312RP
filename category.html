@@ -64,8 +64,12 @@
     const p = imgs(i);
     return `<article class="item ${i.available ? "" : "off"}">
       <div class="img clickable" data-open="${n}">
-        ${p[0] ? `<img src="${esc(p[0])}" alt="${esc(i.title)}" loading="lazy">` : ""}
-        ${p.length > 1 ? `<span class="count">📷 ${p.length}</span>` : ""}
+        <div class="track">
+          ${p.map((u) => `<img src="${esc(u)}" alt="${esc(i.title)}" loading="lazy">`).join("")}
+        </div>
+        ${p.length > 1 ? `<button class="cnav cprev" data-slide="-1" aria-label="Précédente">‹</button>
+        <button class="cnav cnext" data-slide="1" aria-label="Suivante">›</button>
+        <span class="count">1 / ${p.length}</span>` : ""}
       </div>
       <div class="body">
         <h3>${esc(i.title)}</h3>
@@ -85,8 +89,8 @@
     $("mThumbs").innerHTML = p.length < 2 ? "" :
       p.map((u, k) => `<img src="${esc(u)}" class="${k === idx ? "on" : ""}" data-k="${k}" alt="">`).join("");
   }
-  function openItem(n) {
-    cur = list[n]; idx = 0;
+  function openItem(n, start = 0) {
+    cur = list[n]; idx = start;
     $("mTitle").textContent = cur.title;
     $("mDesc").textContent = cur.description || "";
     $("mStatus").innerHTML = status(cur);
@@ -97,9 +101,37 @@
   function close() { $("modal").hidden = true; document.body.style.overflow = ""; }
   const move = (d) => { const l = imgs(cur).length; idx = (idx + d + l) % l; show(); };
 
+  const slideIndex = (el) => {
+    const t = el.querySelector(".track");
+    return Math.round(t.scrollLeft / t.clientWidth) || 0;
+  };
   box.addEventListener("click", (e) => {
     const el = e.target.closest("[data-open]");
-    if (el) openItem(+el.dataset.open);
+    if (!el) return;
+    const arrow = e.target.closest("[data-slide]");
+    const t = el.querySelector(".track");
+    if (arrow) {
+      t.scrollBy({ left: +arrow.dataset.slide * t.clientWidth, behavior: "smooth" });
+      return;
+    }
+    openItem(+el.dataset.open, slideIndex(el));
+  });
+  // Met à jour le compteur « 2 / 5 » quand on fait glisser les photos
+  box.addEventListener("scroll", (e) => {
+    const t = e.target;
+    if (!t.classList || !t.classList.contains("track")) return;
+    const c = t.parentElement.querySelector(".count");
+    if (c) c.textContent = `${Math.round(t.scrollLeft / t.clientWidth) + 1} / ${t.children.length}`;
+  }, true);
+
+  // Glisser du doigt dans la galerie
+  let x0 = null;
+  $("mImg").addEventListener("touchstart", (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+  $("mImg").addEventListener("touchend", (e) => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0;
+    if (Math.abs(dx) > 40 && imgs(cur).length > 1) move(dx < 0 ? 1 : -1);
+    x0 = null;
   });
   $("mClose").onclick = close;
   $("mPrev").onclick = () => move(-1);

@@ -121,3 +121,54 @@ main{max-width:1400px}
 .modal-info h3{margin:0 0 6px;font-size:1.4rem}
 .modal-info p{margin:0 0 12px;color:var(--muted);white-space:pre-wrap}
 .modal-info .btn{width:100%}
+
+/* Défilement gauche/droite des photos dans le cadre */
+.item .img .track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;width:100%;height:100%;scrollbar-width:none}
+.item .img .track::-webkit-scrollbar{display:none}
+.item .img .track img{flex:0 0 100%;width:100%;height:100%;object-fit:cover;scroll-snap-align:center}
+.item.off .img .track img{filter:grayscale(.8) brightness(.6)}
+.cnav{position:absolute;top:50%;transform:translateY(-50%);background:#000a;color:#fff;border:0;border-radius:50%;width:38px;height:38px;font-size:1.6rem;line-height:1;cursor:pointer;z-index:2}
+.cprev{left:8px}.cnext{right:8px}
+.cnav:hover{background:#000d}
+
+/* ===== Style premium : serif Georgia + sans Arial, petites capitales espacées ===== */
+:root{--bg:#0b0b0b;--card:#141414;--line:#2a2a2a;--text:#ece7de;--muted:#9a948a;--accent:#d4799f;
+  --serif:Georgia,"Times New Roman",serif;--sans:Arial,Helvetica,sans-serif}
+body{font-family:var(--sans);background-color:var(--bg);color:var(--text)}
+h1,h2,h3,.logo{font-family:var(--serif);font-weight:400}
+
+header{background:#0b0b0bee;backdrop-filter:blur(6px);box-shadow:none;border-bottom:1px solid var(--line);padding:18px 32px}
+.logo{font-size:1.6rem;letter-spacing:.04em;text-transform:uppercase}
+
+.kicker{color:var(--accent);font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;margin:0 0 8px}
+.section-title{font-family:var(--serif);font-size:2.4rem;font-weight:400;margin:0 0 28px}
+.back{font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.back:hover{color:var(--accent)}
+
+/* Boutons carrés, majuscules espacées */
+.btn{border-radius:0;font-family:var(--sans);font-size:.75rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:14px 26px;background:var(--accent);color:#111}
+.btn.discord{background:transparent;border:1px solid var(--accent);color:var(--accent)}
+.btn.discord:hover{background:#d4799f1a;opacity:1}
+.btn.discord.big{background:var(--accent);color:#111;border-color:var(--accent)}
+.btn.green{background:var(--green);color:#fff}
+.btn.red{background:var(--red);color:#fff}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+.btn.small{padding:8px 14px;font-size:.68rem}
+.items.big .item .btn{font-size:.75rem;padding:14px}
+
+/* Cadres carrés, fins, sans ombre */
+.item,.cat-card,.panel,.modal-box,.list li{border-radius:0;box-shadow:none}
+.thumb,.preview,.viewer,.mthumbs img{border-radius:0}
+.items.big .item{border-radius:0}
+.item h3{font-family:var(--serif);font-size:1.4rem;font-weight:400}
+.items.big .item h3{font-size:1.5rem}
+.item p{font-family:var(--sans);line-height:1.6}
+.cat-label span{font-family:var(--serif);font-weight:400;font-size:1.6rem}
+.cat-label small{letter-spacing:.2em;text-transform:uppercase;font-size:.65rem}
+.banner-text h1{font-family:var(--serif);font-weight:400;letter-spacing:.02em}
+
+input,select,textarea{border-radius:0;background:#0f0f0f}
+input:focus,select:focus,textarea:focus{outline:1px solid var(--accent)}
+label{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase}
+label.check{text-transform:none;letter-spacing:0;font-size:.9rem}
+footer{letter-spacing:.2em;text-transform:uppercase;font-size:.7rem;border-top:1px solid var(--line)}
