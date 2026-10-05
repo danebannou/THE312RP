@@ -10,6 +10,12 @@ async function getSettings() {
 
 function renderHeader(s, admin = false) {
   document.title = s.site_name || "THE312RP";
+  if (s.background_url) {
+    document.body.style.backgroundImage = `linear-gradient(#0e0e14aa,#0e0e14cc), url("${s.background_url}")`;
+    document.body.style.backgroundSize = "cover";
+    document.body.style.backgroundPosition = "center";
+    document.body.style.backgroundAttachment = "fixed";
+  }
   const discord = s.discord_url
     ? `<a class="btn discord" href="${esc(s.discord_url)}" target="_blank" rel="noopener">Discord</a>`
     : "";

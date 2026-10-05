@@ -1,6 +1,6 @@
 :root{--bg:#0e0e14;--card:#181822;--text:#f2f2f7;--muted:#9a9ab0;--accent:#5865f2;--green:#1fa64a;--red:#d63a3a;--line:#2a2a38}
 *{box-sizing:border-box}
-body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+body{background-color:#0e0e14;margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
 main{flex:1;width:100%;max-width:1200px;margin:0 auto;padding:20px 16px 40px}
 header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
 .logo{color:var(--text);text-decoration:none;font-weight:800;font-size:1.3rem;letter-spacing:1px}
