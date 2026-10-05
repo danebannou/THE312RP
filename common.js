@@ -50,3 +50,8 @@ async function deleteImage(url) {
   const name = url.split("/").pop();
   await db.storage.from("images").remove([name]);
 }
+
+// Liste des photos d'un élément (compatible avec l'ancien champ image_url)
+function imgs(i) {
+  return i.images && i.images.length ? i.images : i.image_url ? [i.image_url] : [];
+}

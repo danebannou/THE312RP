@@ -17,6 +17,24 @@
 
 <footer id="footer"></footer>
 
+<!-- Fenêtre d'affichage des photos -->
+<div id="modal" class="modal" hidden>
+  <div class="modal-box">
+    <button class="modal-close" id="mClose" aria-label="Fermer">✕</button>
+    <div class="viewer">
+      <button class="nav prev" id="mPrev" aria-label="Précédente">‹</button>
+      <img id="mImg" alt="">
+      <button class="nav next" id="mNext" aria-label="Suivante">›</button>
+    </div>
+    <div id="mThumbs" class="mthumbs"></div>
+    <div class="modal-info">
+      <h3 id="mTitle"></h3>
+      <p id="mDesc"></p>
+      <div id="mStatus"></div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="common.js"></script>
@@ -32,23 +50,68 @@
   ]);
 
   document.getElementById("title").textContent = cat ? cat.name : "Catégorie introuvable";
+
+  const status = (i) => i.available
+    ? (s.discord_url
+        ? `<a class="btn green" href="${esc(s.discord_url)}" target="_blank" rel="noopener">Disponible</a>`
+        : `<span class="btn green">Disponible</span>`)
+    : `<span class="btn red">Indisponible</span>`;
+
+  const list = items || [];
   const box = document.getElementById("items");
-  if (!items || !items.length) { box.innerHTML = '<p class="empty">Rien ici pour le moment.</p>'; }
-  else box.innerHTML = items.map((i) => `
-    <article class="item ${i.available ? "" : "off"}">
-      <a href="${esc(i.image_url)}" target="_blank" rel="noopener" class="img">
-        ${i.image_url ? `<img src="${esc(i.image_url)}" alt="${esc(i.title)}" loading="lazy">` : ""}
-      </a>
+  if (!list.length) box.innerHTML = '<p class="empty">Rien ici pour le moment.</p>';
+  else box.innerHTML = list.map((i, n) => {
+    const p = imgs(i);
+    return `<article class="item ${i.available ? "" : "off"}">
+      <div class="img clickable" data-open="${n}">
+        ${p[0] ? `<img src="${esc(p[0])}" alt="${esc(i.title)}" loading="lazy">` : ""}
+        ${p.length > 1 ? `<span class="count">📷 ${p.length}</span>` : ""}
+      </div>
       <div class="body">
         <h3>${esc(i.title)}</h3>
         <p>${esc(i.description)}</p>
-        ${i.available
-          ? (s.discord_url
-              ? `<a class="btn green" href="${esc(s.discord_url)}" target="_blank" rel="noopener">Disponible</a>`
-              : `<span class="btn green">Disponible</span>`)
-          : `<span class="btn red">Indisponible</span>`}
+        ${status(i)}
       </div>
-    </article>`).join("");
+    </article>`;
+  }).join("");
+
+  // --- Galerie ---
+  const $ = (x) => document.getElementById(x);
+  let cur = null, idx = 0;
+  function show() {
+    const p = imgs(cur);
+    $("mImg").src = p[idx] || "";
+    $("mPrev").hidden = $("mNext").hidden = p.length < 2;
+    $("mThumbs").innerHTML = p.length < 2 ? "" :
+      p.map((u, k) => `<img src="${esc(u)}" class="${k === idx ? "on" : ""}" data-k="${k}" alt="">`).join("");
+  }
+  function openItem(n) {
+    cur = list[n]; idx = 0;
+    $("mTitle").textContent = cur.title;
+    $("mDesc").textContent = cur.description || "";
+    $("mStatus").innerHTML = status(cur);
+    show();
+    $("modal").hidden = false;
+    document.body.style.overflow = "hidden";
+  }
+  function close() { $("modal").hidden = true; document.body.style.overflow = ""; }
+  const move = (d) => { const l = imgs(cur).length; idx = (idx + d + l) % l; show(); };
+
+  box.addEventListener("click", (e) => {
+    const el = e.target.closest("[data-open]");
+    if (el) openItem(+el.dataset.open);
+  });
+  $("mClose").onclick = close;
+  $("mPrev").onclick = () => move(-1);
+  $("mNext").onclick = () => move(1);
+  $("modal").addEventListener("click", (e) => { if (e.target === $("modal")) close(); });
+  $("mThumbs").addEventListener("click", (e) => { if (e.target.dataset.k) { idx = +e.target.dataset.k; show(); } });
+  document.addEventListener("keydown", (e) => {
+    if ($("modal").hidden) return;
+    if (e.key === "Escape") close();
+    if (e.key === "ArrowLeft") move(-1);
+    if (e.key === "ArrowRight") move(1);
+  });
 
   document.getElementById("footer").textContent = `© ${new Date().getFullYear()} ${s.site_name || "THE312RP"}`;
 })();

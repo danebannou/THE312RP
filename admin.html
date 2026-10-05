@@ -62,9 +62,9 @@
         <label>Catégorie <select id="itemCat" required></select></label>
         <label>Titre <input id="itemTitle" required></label>
         <label>Description <textarea id="itemDesc" rows="4"></textarea></label>
-        <label>Photo (recadrée en 1920×1080) <input id="itemFile" type="file" accept="image/*"></label>
+        <label>Photos (tu peux en ajouter plusieurs, recadrées en 1920×1080) <input id="itemFile" type="file" accept="image/*" multiple></label>
         <label class="check"><input id="itemAvail" type="checkbox" checked> Disponible</label>
-        <img id="itemPreview" class="preview" alt="">
+        <div id="itemThumbs" class="thumbs"></div>
         <div class="row">
           <button class="btn" type="submit" id="itemSubmit">Publier</button>
           <button class="btn ghost" type="button" id="itemCancel" hidden>Annuler la modification</button>
@@ -84,7 +84,7 @@
 <script src="common.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
-let cats = [], editing = null, settings = {};
+let cats = [], editing = null, settings = {}, keep = [], pending = [];
 
 const say = (t, bad) => { const m = $("msg"); m.textContent = t; m.className = "msg" + (bad ? " bad" : ""); if (t) setTimeout(() => (m.textContent = ""), 4000); };
 
@@ -129,7 +129,7 @@ async function loadItems() {
   const name = (id) => (cats.find((c) => c.id === id) || {}).name || "?";
   $("itemList").innerHTML = (data || []).map((i) => `
     <article class="item ${i.available ? "" : "off"}">
-      <div class="img">${i.image_url ? `<img src="${esc(i.image_url)}" alt="" loading="lazy">` : ""}</div>
+      <div class="img">${imgs(i)[0] ? `<img src="${esc(imgs(i)[0])}" alt="" loading="lazy">` : ""}${imgs(i).length > 1 ? `<span class="count">${imgs(i).length} photos</span>` : ""}</div>
       <div class="body">
         <small>${esc(name(i.category_id))}</small>
         <h3>${esc(i.title)}</h3>
@@ -170,23 +170,27 @@ $("catForm").addEventListener("submit", async (e) => {
   loadAll();
 });
 
+function renderThumbs() {
+  $("itemThumbs").innerHTML =
+    keep.map((u, i) => `<div class="thumb"><img src="${esc(u)}" alt=""><button type="button" data-rmkeep="${i}">✕</button></div>`).join("") +
+    pending.map((f, i) => `<div class="thumb"><img src="${URL.createObjectURL(f)}" alt=""><button type="button" data-rmnew="${i}">✕</button></div>`).join("");
+}
 $("itemFile").addEventListener("change", () => {
-  const f = $("itemFile").files[0];
-  if (f) { $("itemPreview").src = URL.createObjectURL(f); $("itemPreview").hidden = false; }
+  pending.push(...$("itemFile").files);
+  $("itemFile").value = "";
+  renderThumbs();
 });
 
 function resetItemForm() {
   editing = null;
   $("itemForm").reset();
   $("itemAvail").checked = true;
-  $("itemPreview").hidden = true;
+  keep = []; pending = []; renderThumbs();
   $("itemFormTitle").textContent = "Ajouter un élément";
   $("itemSubmit").textContent = "Publier";
   $("itemCancel").hidden = true;
 }
 $("itemCancel").onclick = resetItemForm;
-$("itemPreview").hidden = true;
-
 $("itemForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   $("itemSubmit").disabled = true;
@@ -197,14 +201,15 @@ $("itemForm").addEventListener("submit", async (e) => {
       description: $("itemDesc").value.trim(),
       available: $("itemAvail").checked,
     };
-    const f = $("itemFile").files[0];
-    if (f) {
-      row.image_url = await uploadImage(f);
-      if (editing && editing.image_url) await deleteImage(editing.image_url);
-    }
+    const uploaded = [];
+    for (const f of pending) uploaded.push(await uploadImage(f));
+    row.images = [...keep, ...uploaded];
+    row.image_url = row.images[0] || null;
+    const removed = editing ? imgs(editing).filter((u) => !keep.includes(u)) : [];
     const q = editing ? db.from("items").update(row).eq("id", editing.id) : db.from("items").insert(row);
     const { error } = await q;
     if (error) throw error;
+    for (const u of removed) await deleteImage(u);
     say(editing ? "Modifié ✔" : "Publié ✔");
     resetItemForm();
     loadItems();
@@ -220,11 +225,13 @@ document.addEventListener("click", async (e) => {
     if (error) return say("Erreur : " + error.message, true);
     loadItems();
   }
+  if (t.dataset.rmkeep) { keep.splice(+t.dataset.rmkeep, 1); renderThumbs(); }
+  if (t.dataset.rmnew) { pending.splice(+t.dataset.rmnew, 1); renderThumbs(); }
   if (t.dataset.delitem) {
     if (!confirm("Supprimer cet élément ?")) return;
     const it = window._items.find((i) => i.id === t.dataset.delitem);
     await db.from("items").delete().eq("id", t.dataset.delitem);
-    if (it) await deleteImage(it.image_url);
+    if (it) for (const u of imgs(it)) await deleteImage(u);
     loadItems();
   }
   if (t.dataset.edit) {
@@ -234,8 +241,7 @@ document.addEventListener("click", async (e) => {
     $("itemTitle").value = it.title;
     $("itemDesc").value = it.description || "";
     $("itemAvail").checked = it.available;
-    $("itemPreview").src = it.image_url || "";
-    $("itemPreview").hidden = !it.image_url;
+    keep = [...imgs(it)]; pending = []; renderThumbs();
     $("itemFormTitle").textContent = "Modifier l'élément";
     $("itemSubmit").textContent = "Enregistrer";
     $("itemCancel").hidden = false;
@@ -243,7 +249,7 @@ document.addEventListener("click", async (e) => {
   }
   if (t.dataset.delcat) {
     if (!confirm("Supprimer cette catégorie et TOUS ses éléments ?")) return;
-    const urls = window._items.filter((i) => i.category_id === t.dataset.delcat).map((i) => i.image_url);
+    const urls = window._items.filter((i) => i.category_id === t.dataset.delcat).flatMap((i) => imgs(i));
     await db.from("categories").delete().eq("id", t.dataset.delcat);
     for (const u of urls) await deleteImage(u);
     loadAll();
