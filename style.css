@@ -136,3 +136,9 @@ input[type=checkbox]{width:auto}
   .pills a{white-space:nowrap}
 }
 @media(max-width:600px){.items.big{grid-template-columns:1fr}.stat{flex:1}}
+
+/* Personnage de l'accueil (image détourée) */
+.hero-figure{position:relative;display:flex;justify-content:center;align-items:flex-end;min-height:420px}
+.hero-figure::before{content:"";position:absolute;width:80%;aspect-ratio:1;bottom:5%;border-radius:50%;background:radial-gradient(circle,#e8505b55,transparent 68%);filter:blur(10px)}
+.hero-figure img{position:relative;max-height:680px;max-width:100%;width:auto;height:auto;object-fit:contain;filter:drop-shadow(0 20px 40px #000a)}
+@media(max-width:850px){.hero-figure{order:-1;min-height:0}.hero-figure img{max-height:460px}}

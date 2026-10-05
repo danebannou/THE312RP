@@ -35,7 +35,6 @@
   const stats = (Array.isArray(s.stats) ? s.stats : []).filter((x) => x && (x.value || x.label));
   const text = s.hero_text || "Bienvenue ! Découvre nos catégories et rejoins la communauté sur Discord.";
   const hero = document.getElementById("hero");
-  hero.classList.toggle("no-img", !s.banner_url);
   hero.innerHTML = `
     <div>
       <h1>Bienvenue sur<br><span class="accent">${esc(name)}</span></h1>
@@ -46,7 +45,7 @@
       </div>
       ${stats.length ? `<div class="stats">${stats.map((x) => `<div class="stat"><b>${esc(x.value)}</b><span>${esc(x.label)}</span></div>`).join("")}</div>` : ""}
     </div>
-    ${s.banner_url ? `<div class="hero-img"><img src="${esc(s.banner_url)}" alt=""></div>` : ""}`;
+    <div class="hero-figure"><img src="hero.webp" alt=""></div>`;
 
   const [{ data: cats }, { data: items }] = await Promise.all([
     db.from("categories").select("*").order("position").order("created_at"),
