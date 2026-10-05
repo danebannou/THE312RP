@@ -1,0 +1,31 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THE312RP</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>🛍️ THE312RP</h1>
+  <input id="search" type="search" placeholder="Rechercher un produit...">
+  <button id="cartBtn">Panier (<span id="count">0</span>)</button>
+</header>
+
+<nav id="filters"></nav>
+
+<main id="grid"></main>
+
+<aside id="cart" hidden>
+  <h2>Votre panier</h2>
+  <ul id="cartItems"></ul>
+  <p>Total : <strong id="total">0 €</strong></p>
+  <button id="checkout">Commander</button>
+  <button id="closeCart">Fermer</button>
+</aside>
+
+<footer>© 2026 THE312RP</footer>
+<script src="app.js"></script>
+</body>
+</html>
